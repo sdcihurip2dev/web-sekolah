@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { HeroCarousel } from "@/components/HeroCarousel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, Trophy, Calendar } from "lucide-react";
@@ -10,31 +11,8 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-red-600 to-red-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Selamat Datang di SekolahKu Digital
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-red-100">
-              Membangun Generasi Cerdas, Berakhlak Mulia, dan Berprestasi
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Link href="/about">
-                <Button size="lg" variant="secondary">
-                  Tentang Kami
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button size="lg" variant="outline" className="bg-transparent text-white border-white hover:bg-white hover:text-red-600">
-                  Hubungi Kami
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Carousel Section */}
+      <HeroCarousel />
 
       {/* Features Section */}
       <section className="py-16 bg-gray-50">
