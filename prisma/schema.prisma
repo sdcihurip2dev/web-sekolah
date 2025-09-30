@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(teacher)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  posts   Post[]
+  gallery Gallery[]
+
+  @@map("users")
+}
+
+model Student {
+  id            String   @id @default(uuid())
+  name          String
+  class         String
+  parentContact String?  @map("parent_contact")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("students")
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  category  Category @default(news)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  author   User?   @relation(fields: [authorId], references: [id])
+  authorId String? @map("author_id")
+
+  @@map("posts")
+}
+
+model Gallery {
+  id        String   @id @default(uuid())
+  title     String?
+  imageUrl  String   @map("image_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  uploader   User?   @relation(fields: [uploadedBy], references: [id])
+  uploadedBy String? @map("uploaded_by")
+
+  @@map("gallery")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("messages")
+}
+
+enum Role {
+  admin
+  teacher
+  staff
+}
+
+enum Category {
+  news
+  activity
+  announcement
+  blog
+}
