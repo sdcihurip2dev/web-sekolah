@@ -3,10 +3,11 @@ import { prisma } from '@/lib/prisma';
 
 export const runtime = 'nodejs';
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const {id} = await params
     const item = await prisma.student.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       select: { id: true, name: true, class: true, parentContact: true, createdAt: true },
     });
     if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -16,11 +17,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params:   Promise<{ id: string }> }) {
   try {
+    const {id} = await params
     const { name, class: className, parentContact } = await req.json();
     const updated = await prisma.student.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         ...(name !== undefined ? { name } : {}),
         ...(className !== undefined ? { class: className } : {}),
@@ -34,9 +36,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await prisma.student.delete({ where: { id: params.id } });
+    const {id} = await params
+    await prisma.student.delete({ where: { id: id } });
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Failed to delete student' }, { status: 500 });

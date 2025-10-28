@@ -33,8 +33,8 @@ export default function LoginPage() {
       if (data.user) {
         router.push("/dashboard/overview");
       }
-    } catch (err: any) {
-      setError(err.message || "Login failed");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login failed");
     } finally {
       setLoading(false);
     }
