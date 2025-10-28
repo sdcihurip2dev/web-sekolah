@@ -1,4 +1,4 @@
-export const APP_NAME = "SekolahKu Digital";
+export const APP_NAME = "SDN 2 Cihurip";
 
 export const BRAND_COLORS = {
   primary: "#dc2626", // Tailwind red-600

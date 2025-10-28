@@ -1,26 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
-const teachers = [
-  { id: 1, name: "Drs. Ahmad Suryanto, M.Pd", email: "ahmad@sekolahku.sch.id", role: "admin", subject: "Kepala Sekolah" },
-  { id: 2, name: "Ibu Sarah Wijaya, S.Pd", email: "sarah@sekolahku.sch.id", role: "teacher", subject: "Matematika" },
-  { id: 3, name: "Pak Budi Hartono, S.Pd", email: "budi@sekolahku.sch.id", role: "teacher", subject: "Fisika" },
-  { id: 4, name: "Ibu Rina Kusuma, S.Pd", email: "rina@sekolahku.sch.id", role: "teacher", subject: "Bahasa Indonesia" },
-  { id: 5, name: "Pak Andi Pratama, S.Kom", email: "andi@sekolahku.sch.id", role: "teacher", subject: "TIK" },
-  { id: 6, name: "Ibu Dewi Lestari, S.Pd", email: "dewi@sekolahku.sch.id", role: "teacher", subject: "Bahasa Inggris" },
-  { id: 7, name: "Pak Rizki Fauzi, S.Pd", email: "rizki@sekolahku.sch.id", role: "staff", subject: "Administrasi" },
-];
+type Teacher = { id: string; name: string; email: string; subject: string; role: string; createdAt: string };
 
 export default function TeachersPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [items, setItems] = useState<Teacher[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", subject: "", role: "teacher" });
+  const [editing, setEditing] = useState<Teacher | null>(null);
 
-  const filteredTeachers = teachers.filter((teacher) =>
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/teachers');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  const filteredTeachers = items.filter((teacher) =>
     teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     teacher.subject.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -34,6 +48,45 @@ export default function TeachersPage() {
     return colors[role as keyof typeof colors] || colors.teacher;
   };
 
+  async function createTeacher(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch('/api/teachers', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    if (res.ok) {
+      setCreateOpen(false);
+      setForm({ name: "", email: "", subject: "", role: "teacher" });
+      load();
+    }
+  }
+
+  function openEdit(t: Teacher) {
+    setEditing(t);
+    setForm({ name: t.name, email: t.email, subject: t.subject, role: t.role });
+    setEditOpen(true);
+  }
+
+  async function updateTeacher(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    const res = await fetch(`/api/teachers/${editing.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    if (res.ok) {
+      setEditOpen(false);
+      setEditing(null);
+      load();
+    }
+  }
+
+  async function deleteTeacher(id: string) {
+    if (!confirm('Hapus guru/staf ini?')) return;
+    await fetch(`/api/teachers/${id}`, { method: 'DELETE' });
+    load();
+  }
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -46,15 +99,53 @@ export default function TeachersPage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <CardTitle>Daftar Guru & Staf</CardTitle>
-              <CardDescription>Total {teachers.length} guru dan staf terdaftar</CardDescription>
+              <CardDescription>Total {items.length} guru dan staf terdaftar</CardDescription>
             </div>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Tambah Guru/Staf
-            </Button>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tambah Guru/Staf
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Tambah Guru/Staf</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={createTeacher} className="space-y-4">
+                  <div>
+                    <label className="block text-sm mb-1">Nama</label>
+                    <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Email</label>
+                    <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Mata Pelajaran/Jabatan</label>
+                    <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Role</label>
+                    <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-4 py-2 border rounded-md bg-white w-full">
+                      <option value="teacher">Guru</option>
+                      <option value="admin">Admin</option>
+                      <option value="staff">Staf</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">Batal</Button>
+                    </DialogClose>
+                    <Button type="submit">Simpan</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
+          {loading && <div className="text-sm text-gray-500 mb-4">Memuat data...</div>}
           {/* Search */}
           <div className="mb-6">
             <div className="relative">
@@ -94,10 +185,47 @@ export default function TeachersPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
+                      <Dialog open={editOpen && editing?.id === teacher.id} onOpenChange={(o) => { if (!o) setEditOpen(false); }}>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(teacher)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit Guru/Staf</DialogTitle>
+                          </DialogHeader>
+                          <form onSubmit={updateTeacher} className="space-y-4">
+                            <div>
+                              <label className="block text-sm mb-1">Nama</label>
+                              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                            </div>
+                            <div>
+                              <label className="block text-sm mb-1">Email</label>
+                              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+                            </div>
+                            <div>
+                              <label className="block text-sm mb-1">Mata Pelajaran/Jabatan</label>
+                              <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
+                            </div>
+                            <div>
+                              <label className="block text-sm mb-1">Role</label>
+                              <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className="px-4 py-2 border rounded-md bg-white w-full">
+                                <option value="teacher">Guru</option>
+                                <option value="admin">Admin</option>
+                                <option value="staff">Staf</option>
+                              </select>
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <DialogClose asChild>
+                                <Button type="button" variant="outline">Batal</Button>
+                              </DialogClose>
+                              <Button type="submit">Simpan</Button>
+                            </div>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                      <Button variant="ghost" size="sm" onClick={() => deleteTeacher(teacher.id)}>
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
                     </div>

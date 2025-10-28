@@ -201,11 +201,32 @@ Modify `NAV_LINKS` and `DASHBOARD_LINKS` in `src/lib/constants.ts` to add or rem
 
 ### Deploy to Vercel
 
-1. Push your code to GitHub
-2. Go to [Vercel](https://vercel.com)
-3. Import your repository
-4. Add environment variables from `.env.local`
-5. Deploy
+1. Push your code to GitHub (or GitLab/Bitbucket)
+2. Go to [Vercel](https://vercel.com) and click "New Project"
+3. Import your repository and select the project
+4. In "Environment Variables", add the following (copy from your `.env.local`):
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `DATABASE_URL` (use Supabase Connection Pooling string)
+
+   Recommended pooled connection (Serverless): in Supabase Dashboard → Project Settings → Database → Connection Pooling, copy the pooled connection string (port 6543) and set:
+
+   Example:
+   ```env
+   DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@aws-<ref>.supabase.co:6543/postgres?pgbouncer=true&connection_limit=1
+   ```
+
+5. Build settings (Vercel auto-detects Next.js):
+   - Install Command: `npm install`
+   - Build Command: `npm run build`
+   - Output Directory: (auto)
+
+6. Click Deploy
+
+Notes:
+- Prisma: `postinstall` runs `prisma generate` automatically on Vercel build.
+- Images: `next.config.ts` allows Supabase Storage images via Next/Image.
+- API Runtime: Carousel API is forced to Node.js runtime for Prisma compatibility.
 
 ### Deploy to Other Platforms
 

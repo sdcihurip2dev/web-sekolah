@@ -1,32 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
-const students = [
-  { id: 1, name: "Ahmad Fauzi", class: "X-A", parentContact: "0812-3456-7890" },
-  { id: 2, name: "Siti Nurhaliza", class: "X-A", parentContact: "0813-4567-8901" },
-  { id: 3, name: "Budi Santoso", class: "X-B", parentContact: "0814-5678-9012" },
-  { id: 4, name: "Dewi Lestari", class: "X-B", parentContact: "0815-6789-0123" },
-  { id: 5, name: "Rizki Pratama", class: "XI-A", parentContact: "0816-7890-1234" },
-  { id: 6, name: "Maya Sari", class: "XI-A", parentContact: "0817-8901-2345" },
-  { id: 7, name: "Andi Wijaya", class: "XI-B", parentContact: "0818-9012-3456" },
-  { id: 8, name: "Putri Ayu", class: "XI-B", parentContact: "0819-0123-4567" },
-];
+type Student = { id: string; name: string; class: string; parentContact: string | null; createdAt: string };
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState("all");
+  const [items, setItems] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", class: "", parentContact: "" });
+  const [editing, setEditing] = useState<Student | null>(null);
 
-  const filteredStudents = students.filter((student) => {
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/students');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  const filteredStudents = items.filter((student) => {
     const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesClass = selectedClass === "all" || student.class === selectedClass;
     return matchesSearch && matchesClass;
   });
+
+  async function createStudent(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch('/api/students', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: form.name, class: form.class, parentContact: form.parentContact || null }),
+    });
+    if (res.ok) {
+      setCreateOpen(false);
+      setForm({ name: "", class: "", parentContact: "" });
+      load();
+    }
+  }
+
+  function openEdit(s: Student) {
+    setEditing(s);
+    setForm({ name: s.name, class: s.class, parentContact: s.parentContact || "" });
+    setEditOpen(true);
+  }
+
+  async function updateStudent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    const res = await fetch(`/api/students/${editing.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: form.name, class: form.class, parentContact: form.parentContact || null }),
+    });
+    if (res.ok) {
+      setEditOpen(false);
+      setEditing(null);
+      load();
+    }
+  }
+
+  async function deleteStudent(id: string) {
+    if (!confirm('Hapus siswa ini?')) return;
+    await fetch(`/api/students/${id}`, { method: 'DELETE' });
+    load();
+  }
 
   return (
     <div className="p-8">
@@ -40,15 +92,45 @@ export default function StudentsPage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <CardTitle>Daftar Siswa</CardTitle>
-              <CardDescription>Total {students.length} siswa terdaftar</CardDescription>
+              <CardDescription>Total {items.length} siswa terdaftar</CardDescription>
             </div>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Tambah Siswa
-            </Button>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tambah Siswa
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Tambah Siswa</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={createStudent} className="space-y-4">
+                  <div>
+                    <label className="block text-sm mb-1">Nama</label>
+                    <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Kelas</label>
+                    <Input value={form.class} onChange={(e) => setForm({ ...form, class: e.target.value })} required />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1">Kontak Orang Tua</label>
+                    <Input value={form.parentContact} onChange={(e) => setForm({ ...form, parentContact: e.target.value })} />
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">Batal</Button>
+                    </DialogClose>
+                    <Button type="submit">Simpan</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
+          {loading && <div className="text-sm text-gray-500 mb-4">Memuat data...</div>}
           {/* Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
@@ -93,10 +175,39 @@ export default function StudentsPage() {
                   <TableCell>{student.parentContact}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
+                      <Dialog open={editOpen && editing?.id === student.id} onOpenChange={(o) => { if (!o) setEditOpen(false); }}>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(student)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Edit Siswa</DialogTitle>
+                          </DialogHeader>
+                          <form onSubmit={updateStudent} className="space-y-4">
+                            <div>
+                              <label className="block text-sm mb-1">Nama</label>
+                              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                            </div>
+                            <div>
+                              <label className="block text-sm mb-1">Kelas</label>
+                              <Input value={form.class} onChange={(e) => setForm({ ...form, class: e.target.value })} required />
+                            </div>
+                            <div>
+                              <label className="block text-sm mb-1">Kontak Orang Tua</label>
+                              <Input value={form.parentContact} onChange={(e) => setForm({ ...form, parentContact: e.target.value })} />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <DialogClose asChild>
+                                <Button type="button" variant="outline">Batal</Button>
+                              </DialogClose>
+                              <Button type="submit">Simpan</Button>
+                            </div>
+                          </form>
+                        </DialogContent>
+                      </Dialog>
+                      <Button variant="ghost" size="sm" onClick={() => deleteStudent(student.id)}>
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
                     </div>

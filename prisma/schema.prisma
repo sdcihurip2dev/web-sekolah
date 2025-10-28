@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -63,6 +64,17 @@ model Message {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("messages")
+}
+
+model Teacher {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  subject   String
+  role      Role     @default(teacher)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("teachers")
 }
 
 enum Role {

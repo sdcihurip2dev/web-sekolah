@@ -1,23 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import Link from "next/link";
 
-const posts = [
-  { id: 1, title: "Prestasi Gemilang di Olimpiade Sains", category: "news", author: "Admin", date: "2025-01-15", status: "published" },
-  { id: 2, title: "Tips Belajar Efektif untuk Siswa", category: "blog", author: "Ibu Sarah", date: "2025-01-12", status: "published" },
-  { id: 3, title: "Kegiatan Bakti Sosial", category: "activity", author: "Admin", date: "2025-01-10", status: "published" },
-  { id: 4, title: "Pengumuman Libur Semester", category: "announcement", author: "Admin", date: "2025-01-08", status: "draft" },
-  { id: 5, title: "Pentas Seni Akhir Tahun", category: "activity", author: "Admin", date: "2024-12-20", status: "published" },
-];
+type PostRow = { id: string; title: string; category: string; createdAt: string };
 
 export default function PostsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [posts, setPosts] = useState<PostRow[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/posts');
+        if (res.ok) {
+          const data = await res.json();
+          setPosts(data);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
 
   const filteredPosts = posts.filter((post) => {
     const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase());
@@ -35,11 +48,13 @@ export default function PostsPage() {
     return colors[category as keyof typeof colors] || colors.news;
   };
 
-  const getStatusBadge = (status: string) => {
-    return status === "published"
-      ? "bg-green-100 text-green-600"
-      : "bg-gray-100 text-gray-600";
-  };
+  // status column removed; using createdAt only
+
+  async function deletePost(id: string) {
+    if (!confirm('Hapus postingan ini?')) return;
+    await fetch(`/api/posts/${id}`, { method: 'DELETE' });
+    setPosts((prev) => prev.filter((p) => p.id !== id));
+  }
 
   return (
     <div className="p-8">
@@ -55,13 +70,18 @@ export default function PostsPage() {
               <CardTitle>Daftar Postingan</CardTitle>
               <CardDescription>Total {posts.length} postingan</CardDescription>
             </div>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Buat Postingan
-            </Button>
+            <Link href="/dashboard/posts/new">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Buat Postingan
+              </Button>
+            </Link>
           </div>
         </CardHeader>
         <CardContent>
+          {loading && (
+            <div className="text-sm text-gray-500 mb-4">Memuat data...</div>
+          )}
           {/* Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
@@ -93,9 +113,7 @@ export default function PostsPage() {
                 <TableHead>No</TableHead>
                 <TableHead>Judul</TableHead>
                 <TableHead>Kategori</TableHead>
-                <TableHead>Penulis</TableHead>
                 <TableHead>Tanggal</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
@@ -109,22 +127,15 @@ export default function PostsPage() {
                       {post.category}
                     </span>
                   </TableCell>
-                  <TableCell>{post.author}</TableCell>
-                  <TableCell>{post.date}</TableCell>
-                  <TableCell>
-                    <span className={`text-xs px-2 py-1 rounded ${getStatusBadge(post.status)}`}>
-                      {post.status}
-                    </span>
-                  </TableCell>
+                  <TableCell>{new Date(post.createdAt).toLocaleDateString('id-ID')}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
+                      <Link href={`/dashboard/posts/${post.id}/edit`}>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                      <Button variant="ghost" size="sm" onClick={() => deletePost(post.id)}>
                         <Trash2 className="w-4 h-4 text-red-600" />
                       </Button>
                     </div>

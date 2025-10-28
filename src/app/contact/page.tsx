@@ -18,18 +18,31 @@ export default function ContactPage() {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    // Simulate form submission
-    setTimeout(() => {
-      setLoading(false);
+    setError(null);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error || 'Gagal mengirim pesan');
+      }
       setSuccess(true);
       setFormData({ name: "", email: "", message: "" });
       setTimeout(() => setSuccess(false), 3000);
-    }, 1000);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Terjadi kesalahan';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -64,6 +77,11 @@ export default function ContactPage() {
                     {success && (
                       <div className="bg-green-50 text-green-600 p-3 rounded-md text-sm">
                         Pesan berhasil dikirim! Kami akan segera menghubungi Anda.
+                      </div>
+                    )}
+                    {error && (
+                      <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+                        {error}
                       </div>
                     )}
 

@@ -2,6 +2,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Eye, Award } from "lucide-react";
+import { APP_NAME } from "@/lib/constants";
 
 export default function AboutPage() {
   return (
@@ -13,7 +14,7 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Tentang Kami</h1>
           <p className="text-xl text-red-100">
-            Mengenal lebih dekat SekolahKu Digital
+            Mengenal lebih dekat {APP_NAME}
           </p>
         </div>
       </section>
@@ -24,7 +25,7 @@ export default function AboutPage() {
           <h2 className="text-3xl font-bold mb-6">Sejarah Sekolah</h2>
           <div className="prose max-w-none">
             <p className="text-gray-600 text-lg mb-4">
-              SekolahKu Digital didirikan pada tahun 2000 dengan visi menjadi lembaga pendidikan terdepan yang menghasilkan generasi cerdas, berakhlak mulia, dan berprestasi. Selama lebih dari dua dekade, kami telah melayani ribuan siswa dan menghasilkan lulusan yang sukses di berbagai bidang.
+            {APP_NAME} didirikan pada tahun 2000 dengan visi menjadi lembaga pendidikan terdepan yang menghasilkan generasi cerdas, berakhlak mulia, dan berprestasi. Selama lebih dari dua dekade, kami telah melayani ribuan siswa dan menghasilkan lulusan yang sukses di berbagai bidang.
             </p>
             <p className="text-gray-600 text-lg">
               Dengan fasilitas modern dan tenaga pengajar profesional, kami terus berinovasi dalam metode pembelajaran untuk memastikan setiap siswa mendapatkan pendidikan terbaik.
